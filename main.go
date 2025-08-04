@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,8 +10,8 @@ import (
 type Movie struct {
 	Title string `json:"title"`
 	ID    int    `json:"id"`
-	Actor string `json:"author"`
-	Genre string `json:"quantity"`
+	Actor string `json:"actor"`
+	Genre string `json:"genre"`
 }
 
 var movies = []Movie{
@@ -25,9 +24,28 @@ var movies = []Movie{
 func GetMovies(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, movies)
 }
+
+func AddMovies(c *gin.Context) {
+	var mymovie Movie
+
+	// trying to parse request json into struct
+
+	if err := c.BindJSON(&mymovie); err != nil {
+		// Send back a 400 Bad Request with an error message
+
+		c.JSON(http.StatusBadRequest, gin.H{ // returning a map
+			"error":   "Invalid JSON data",
+			"details": err.Error(),
+		})
+		return
+	}
+	movies = append(movies, mymovie)
+	c.IndentedJSON(http.StatusAccepted, movies)
+}
+
 func main() {
 	router := gin.Default()
 	router.GET("/getmovies", GetMovies)
-	fmt.Println(movies)
+	router.POST("postmovies", AddMovies)
 	router.Run("localhost:5050")
 }
