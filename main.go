@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -9,16 +10,16 @@ import (
 // fake database :)
 type Movie struct {
 	Title string `json:"title"`
-	ID    int    `json:"id"`
+	ID    string `json:"id"`
 	Actor string `json:"actor"`
 	Genre string `json:"genre"`
 }
 
 var movies = []Movie{
-	{Title: "Oppenheimer", ID: 1, Actor: "Cillian Murphy", Genre: "History"},
-	{Title: "The Dark Knight", ID: 2, Actor: "Christian Bale", Genre: "Action"},
-	{Title: "Ford v Ferrari", ID: 3, Actor: "Christian Bale", Genre: "Sports"},
-	{Title: "Man of Steel", ID: 4, Actor: "Henry Cavill", Genre: "Fiction"},
+	{Title: "Oppenheimer", ID: "1", Actor: "Cillian Murphy", Genre: "History"},
+	{Title: "The Dark Knight", ID: "2", Actor: "Christian Bale", Genre: "Action"},
+	{Title: "Ford v Ferrari", ID: "3", Actor: "Christian Bale", Genre: "Sports"},
+	{Title: "Man of Steel", ID: "4", Actor: "Henry Cavill", Genre: "Fiction"},
 }
 
 func GetMovies(c *gin.Context) {
@@ -43,9 +44,35 @@ func AddMovies(c *gin.Context) {
 	c.IndentedJSON(http.StatusAccepted, movies)
 }
 
+// agge return types hein, Sending Movie pointer to avoid copying it -> returning by reference
+func GetById(id string) (*Movie, error) {
+
+	for _, movie := range movies {
+		if movie.ID == id {
+			return &movie, nil
+		}
+	}
+	return nil, errors.New("book not found")
+}
+
+func GetMovie(c *gin.Context) {
+	idParam := c.Param("id")
+	movie, err := GetById((idParam))
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Movie not found",
+			"details": err.Error(),
+		})
+	}
+	c.IndentedJSON(http.StatusFound, movie)
+
+}
+
 func main() {
 	router := gin.Default()
 	router.GET("/getmovies", GetMovies)
 	router.POST("postmovies", AddMovies)
+	router.GET("/getmovies/:id", GetMovie)
 	router.Run("localhost:5050")
 }
